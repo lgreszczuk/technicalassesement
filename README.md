@@ -1,0 +1,2 @@
+# technicalassesement
+Awareson TA
