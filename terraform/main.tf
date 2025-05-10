@@ -79,7 +79,7 @@ resource "azurerm_app_service" "main" {
 # Configure source control for the App Service
 resource "azurerm_app_service_source_control" "main" {
   app_id                 = azurerm_app_service.main.id  # Use the App Service's ID
-  repo_url               = "https://github.com/lgreszczuk/technicalassesement"  # GitHub repository URL
+  repo_url               = "https://github.com/lgreszczuk/technicalassesement/app"  # GitHub repository URL
   branch                 = "main"  # Branch to deploy from
   use_manual_integration = true  # Use manual integration for deployment
 }

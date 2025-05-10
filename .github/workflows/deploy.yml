@@ -1,31 +1,31 @@
-name: Deploy to Azure  # Name of the GitHub Actions workflow
+# .github/workflows/deploy.yml
+name: Deploy Azure App with Terraform
 
 on:
-  push:  # Trigger the workflow on a push event
+  push:
     branches:
-      - main  # Only trigger when changes are pushed to the 'main' branch
+      - main
 
 jobs:
-  terraform:  # Job to handle Terraform infrastructure setup
-    runs-on: ubuntu-latest  # Use the latest Ubuntu runner
+  deploy:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code  # Step to check out the repository code
-        uses: actions/checkout@v3  # Use the GitHub-provided checkout action
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: Set up Terraform  # Step to set up Terraform CLI
-        uses: hashicorp/setup-terraform@v2  # Use the HashiCorp-provided Terraform setup action
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
 
-      - name: Terraform Init  # Step to initialize Terraform
-        run: terraform init  # Run the 'terraform init' command
-        working-directory: terraform/  # Specify the directory containing Terraform configuration files
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform
 
-      - name: Terraform Apply  # Step to apply Terraform configuration
-        run: terraform apply -auto-approve  # Run 'terraform apply' with auto-approval to avoid manual confirmation
-        working-directory: terraform/  # Specify the directory containing Terraform configuration files
-
-  deploy-app:  # Job to deploy the application
-    needs: terraform  # This job depends on the successful completion of the 'terraform' job
-    runs-on: ubuntu-latest  # Use the latest Ubuntu runner
-    steps:
-      - name: Deploy app using Azure CLI or Zip deploy  # Placeholder step for app deployment
-        # Add Azure login and deployment logic here
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: terraform
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          
