@@ -1,0 +1,16 @@
+<!-- A form for submitting user data via POST method -->
+<form method="POST">
+  <!-- Input field for entering the user's name -->
+  <input name="name" placeholder="Enter name" />
+  <!-- Submit button to add the entered name -->
+  <button type="submit">Add</button>
+</form>
+
+<!-- Unordered list to display the list of users -->
+<ul>
+  <!-- Loop through the 'users' variable and display each user's name -->
+  {% for user in users %}
+    <!-- Display the second element (index 1) of each user tuple -->
+    <li>{{ user[1] }}</li>
+  {% endfor %}
+</ul>
