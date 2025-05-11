@@ -1,85 +1,107 @@
-# Specify the Azure provider
+# terraform/main.tf
 provider "azurerm" {
-  features {}  # Enable all default features for the Azure provider
+  features {}
 }
 
-# Define a variable for the resource group name
 variable "resource_group_name" {
-  default = "python-app-rg"  # Default name for the resource group
+  default = "python-app-rg"
 }
 
-# Define a variable for the Azure location
 variable "location" {
-  default = "East Europe"  # Default Azure region
+  default = "East US"
 }
 
-# Create an Azure resource group
 resource "azurerm_resource_group" "main" {
-  name     = var.resource_group_name  # Use the resource group name variable
-  location = var.location  # Use the location variable
+  name     = var.resource_group_name
+  location = var.location
 }
 
-# Create an Azure App Service Plan
-resource "azurerm_app_service_plan" "main" {
-  name                = "python-app-plan"  # Name of the App Service Plan
-  location            = azurerm_resource_group.main.location  # Use the resource group's location
-  resource_group_name = azurerm_resource_group.main.name  # Use the resource group's name
-  sku {
-    tier = "Free"  # Use the free pricing tier
-    size = "F1"  # Use the smallest size
+resource "azurerm_virtual_network" "main" {
+  name                = "python-app-vnet"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  address_space       = ["10.0.0.0/16"]
+}
+
+resource "azurerm_subnet" "main" {
+  name                 = "mysql-subnet"
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = ["10.0.1.0/24"]
+  service_endpoints    = ["Microsoft.Storage"]
+
+  delegation {
+    name = "mysql-delegation"
+    service_delegation {
+      name = "Microsoft.DBforMySQL/flexibleServers"
+      actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+    }
   }
 }
 
-# Create an Azure MySQL Flexible Server
+resource "azurerm_private_dns_zone" "main" {
+  name                = "privatelink.mysql.database.azure.com"
+  resource_group_name = azurerm_resource_group.main.name
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "main" {
+  name                  = "mysql-vnet-link"
+  private_dns_zone_name = azurerm_private_dns_zone.main.name
+  virtual_network_id    = azurerm_virtual_network.main.id
+  resource_group_name   = azurerm_resource_group.main.name
+}
+
 resource "azurerm_mysql_flexible_server" "main" {
-  name                   = "pythonmysqlsrv"  # Name of the MySQL server
-  resource_group_name    = azurerm_resource_group.main.name  # Use the resource group's name
-  location               = azurerm_resource_group.main.location  # Use the resource group's location
-  administrator_login    = "lgsqladmin"  # Admin username for the database
-  administrator_password = "Password123!"  # Admin password for the database
-  sku_name               = "B1ms"  # SKU for the MySQL server
-  version                = "8.0"  # MySQL version
-  storage_mb             = 32768  # Storage size in MB
-  zone                   = "1"  # Availability zone
-  delegated_subnet_id    = null  # No delegated subnet
-  private_dns_zone_id    = null  # No private DNS zone
+  name                   = "pythonmysqlsrv"
+  resource_group_name    = azurerm_resource_group.main.name
+  location               = azurerm_resource_group.main.location
+  administrator_login    = "lgsqladmin"
+  administrator_password = "Password123!"
+  backup_retention_days  = 7
+  delegated_subnet_id    = azurerm_subnet.main.id
+  private_dns_zone_id    = azurerm_private_dns_zone.main.id
+  sku_name               = "B_Standard_B1ms"
+
+  depends_on = [azurerm_private_dns_zone_virtual_network_link.main]
 }
 
-# Create a MySQL database within the server
 resource "azurerm_mysql_flexible_database" "main" {
-  name                = "appdb"  # Name of the database
-  resource_group_name = azurerm_resource_group.main.name  # Use the resource group's name
-  server_name         = azurerm_mysql_flexible_server.main.name  # Use the MySQL server's name
-  charset             = "utf8"  # Character set for the database
-  collation           = "utf8_unicode_ci"  # Collation for the database
+  name                = "appdb"
+  resource_group_name = azurerm_resource_group.main.name
+  server_name         = azurerm_mysql_flexible_server.main.name
+  charset             = "utf8"
+  collation           = "utf8_unicode_ci"
 }
 
-# Create an Azure App Service
-resource "azurerm_app_service" "main" {
-  name                = "python-webapp-service"  # Name of the App Service
-  location            = azurerm_resource_group.main.location  # Use the resource group's location
-  resource_group_name = azurerm_resource_group.main.name  # Use the resource group's name
-  app_service_plan_id = azurerm_app_service_plan.main.id  # Use the App Service Plan's ID
+resource "azurerm_service_plan" "main" {
+  name                = "python-app-plan"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  sku_name            = "F1"
+  os_type             = "Linux"
+}
 
-  # Define application settings (environment variables)
-  app_settings = {
-    "DB_HOST" = azurerm_mysql_flexible_server.main.fqdn  # Database host
-    "DB_USER" = "lgsqladmin"  # Database user
-    "DB_PASS" = "Password123!"  # Database password
-    "DB_NAME" = azurerm_mysql_flexible_database.main.name  # Database name
-  }
+resource "azurerm_linux_web_app" "main" {
+  name                = "python-webapp-service"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  service_plan_id     = azurerm_service_plan.main.id
 
-  # Configure site settings
   site_config {
-    always_on = false  # Disable "Always On" to save resources
-    linux_fx_version = "PYTHON|3.11"  # Specify the runtime stack (Python 3.11)
+    always_on = false
+  }
+
+  app_settings = {
+    "DB_HOST" = azurerm_mysql_flexible_server.main.fqdn
+    "DB_USER" = "lgsqladmin"
+    "DB_PASS" = "Password123!"
+    "DB_NAME" = azurerm_mysql_flexible_database.main.name
   }
 }
 
-# Configure source control for the App Service
 resource "azurerm_app_service_source_control" "main" {
-  app_id                 = azurerm_app_service.main.id  # Use the App Service's ID
-  repo_url               = "https://github.com/lgreszczuk/technicalassesement/app"  # GitHub repository URL
-  branch                 = "main"  # Branch to deploy from
-  use_manual_integration = true  # Use manual integration for deployment
+  app_id                 = azurerm_linux_web_app.main.id
+  repo_url               = "https://github.com/lgreszczuk/technicalassesement/app"
+  branch                 = "main"
+  use_manual_integration = true
 }
