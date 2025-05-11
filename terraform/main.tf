@@ -1,16 +1,5 @@
 # terraform/main.tf
-terraform {
-  backend "azurerm" {
-    resource_group_name  = "tfstate-rg"
-    storage_account_name = "tfstatebackendstore"
-    container_name        = "tfstate"
-    key                   = "terraform.tfstate"
-  }
-}
 
-provider "azurerm" {
-  features {}
-}
 
 variable "resource_group_name" {
   default = "python-app-rg"
@@ -106,11 +95,4 @@ resource "azurerm_linux_web_app" "main" {
     "DB_PASS" = "Password123!"
     "DB_NAME" = azurerm_mysql_flexible_database.main.name
   }
-}
-
-resource "azurerm_app_service_source_control" "main" {
-  app_id                 = azurerm_linux_web_app.main.id
-  repo_url               = "https://github.com/lgreszczuk/technicalassesement/app"
-  branch                 = "main"
-  use_manual_integration = true
 }
