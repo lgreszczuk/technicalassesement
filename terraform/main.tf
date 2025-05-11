@@ -1,6 +1,7 @@
 # terraform/main.tf
 provider "azurerm" {
   features {}
+  subscription_id = "26a031e1-ce9d-498d-84fa-064720e59855"
 }
 
 variable "resource_group_name" {
