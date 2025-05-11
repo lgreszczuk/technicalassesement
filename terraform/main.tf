@@ -86,7 +86,7 @@ resource "azurerm_linux_web_app" "main" {
   service_plan_id     = azurerm_service_plan.main.id
 
   site_config {
-  linux_fx_version = "PYTHON|3.10"
+    always_on = true
   }
 
   app_settings = {
