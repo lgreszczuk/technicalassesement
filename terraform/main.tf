@@ -9,7 +9,7 @@ variable "resource_group_name" {
 }
 
 variable "location" {
-  default = "East US"
+default = "Poland Central"
 }
 
 resource "azurerm_resource_group" "main" {
