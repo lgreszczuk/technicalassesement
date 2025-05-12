@@ -71,31 +71,31 @@ resource "azurerm_mysql_flexible_database" "main" {
   collation           = "utf8_unicode_ci"
 }
 
-resource "azurerm_service_plan" "main" {
-  name                = "python-app-plan"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  sku_name            = "F1"
-  os_type             = "Linux"
-}
-
-resource "azurerm_linux_web_app" "main" {
-  name                = "python-webapp-service"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  service_plan_id     = azurerm_service_plan.main.id
-
-  site_config {
-    always_on = false
-    application_stack {
-         python_version  = "3.10"
-    }
-  }
-
-  app_settings = {
-    "DB_HOST" = azurerm_mysql_flexible_server.main.fqdn
-    "DB_USER" = "lgsqladmin"
-    "DB_PASS" = "Password123!"
-    "DB_NAME" = azurerm_mysql_flexible_database.main.name
-  }
-}
+#resource "azurerm_service_plan" "main" {
+#  name                = "python-app-plan"
+#  location            = azurerm_resource_group.main.location
+#  resource_group_name = azurerm_resource_group.main.name
+#  sku_name            = "F1"
+#  os_type             = "Linux"
+#}
+#
+#resource "azurerm_linux_web_app" "main" {
+#  name                = "python-webapp-service"
+#  location            = azurerm_resource_group.main.location
+#  resource_group_name = azurerm_resource_group.main.name
+#  service_plan_id     = azurerm_service_plan.main.id
+#
+#  site_config {
+#    always_on = false
+#    application_stack {
+#         python_version  = "3.10"
+#    }
+#  }
+#
+#  app_settings = {
+#    "DB_HOST" = azurerm_mysql_flexible_server.main.fqdn
+#    "DB_USER" = "lgsqladmin"
+#    "DB_PASS" = "Password123!"
+#    "DB_NAME" = azurerm_mysql_flexible_database.main.name
+#  }
+#}
