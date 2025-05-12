@@ -88,7 +88,7 @@ resource "azurerm_linux_web_app" "main" {
   site_config {
     always_on = false
     application_stack {
-         python_version  = 3.10
+         python_version  = "3.10"
     }
   }
 
