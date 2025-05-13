@@ -73,7 +73,7 @@ resource "azurerm_mysql_flexible_server" "main" {
   backup_retention_days  = 7
   delegated_subnet_id    = azurerm_subnet.mysql.id
   private_dns_zone_id    = azurerm_private_dns_zone.main.id
-  sku_name               = "GP_Standard_D2s_v3" # Minimum Premium tier
+  sku_name               = "B_Standard_B1ms" # Minimum Premium tier
 
   depends_on = [azurerm_private_dns_zone_virtual_network_link.main]
 }
@@ -91,7 +91,7 @@ resource "azurerm_service_plan" "main" {
   name                = "python-app-plan"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
-  sku_name            = "P1v3" # Premium V3 tier
+  sku_name            = "P0v3" # Premium V3 tier
   os_type             = "Linux"
 }
 
