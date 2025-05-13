@@ -5,6 +5,32 @@ import os  # Import os module to access environment variables
 # Initialize the Flask application
 app = Flask(__name__)
 
+# Function to initialize the database table
+def init_db():
+    try:
+        conn = mysql.connector.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASS"),
+            database=os.getenv("DB_NAME")
+        )
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100) NOT NULL
+            )
+        """)
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("✅ Table 'users' ensured in database.")
+    except Exception as e:
+        print("❌ Database initialization failed:", e)
+        
+# Call database initialization before handling routes
+init_db()
+
 # Define the route for the root URL and allow both GET and POST methods
 @app.route("/", methods=["GET", "POST"])
 def index():
