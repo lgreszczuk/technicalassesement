@@ -3,7 +3,7 @@ variable "resource_group_name" {
 }
 
 variable "location" {
-  default = "Poland Central"
+  default = "West Europe"
 }
 
 resource "azurerm_resource_group" "main" {
@@ -24,15 +24,15 @@ resource "azurerm_subnet" "mysql" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.1.0/24"]
-  service_endpoints    = ["Microsoft.Storage"]
-
-  delegation {
-    name = "mysql-delegation"
-    service_delegation {
-      name    = "Microsoft.DBforMySQL/flexibleServers"
-      actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
-    }
-  }
+  #service_endpoints    = ["Microsoft.Storage"]
+#
+  #delegation {
+  #  name = "mysql-delegation"
+  #  service_delegation {
+  #    name    = "Microsoft.DBforMySQL/flexibleServers"
+  #    actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+  #  }
+  #}
 }
 
 # Subnet for App Service Integration
@@ -71,11 +71,26 @@ resource "azurerm_mysql_flexible_server" "main" {
   administrator_login    = "lgsqladmin"
   administrator_password = "Password123!"
   backup_retention_days  = 7
-  delegated_subnet_id    = azurerm_subnet.mysql.id
+  #delegated_subnet_id    = azurerm_subnet.mysql.id
   private_dns_zone_id    = azurerm_private_dns_zone.main.id
-  sku_name               = "B_Standard_B1ms" # Minimum Premium tier
+  public_network_access  = "Enabled"
+  sku_name               = "GP_Standard_D2ds_v4" 
 
   depends_on = [azurerm_private_dns_zone_virtual_network_link.main]
+}
+
+resource "azurerm_private_endpoint" "mysql" {
+  name                = "mysql-private-endpoint"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  subnet_id           = azurerm_subnet.mysql.id
+
+  private_service_connection {
+    name                           = "mysql-connection"
+    private_connection_resource_id = azurerm_mysql_flexible_server.main.id
+    is_manual_connection           = false
+    subresource_names              = ["mysqlServer"]
+  }
 }
 
 resource "azurerm_mysql_flexible_database" "main" {
@@ -121,4 +136,12 @@ resource "azurerm_linux_web_app" "main" {
 resource "azurerm_app_service_virtual_network_swift_connection" "main" {
   app_service_id = azurerm_linux_web_app.main.id
   subnet_id      = azurerm_subnet.app_service.id
+}
+
+# Configure source control for the App Service
+resource "azurerm_app_service_source_control" "main" {
+  app_id                 = azurerm_linux_web_app.main.id  # Use the App Service's ID
+  repo_url               = "https://github.com/lgreszczuk/flaskapp"  # GitHub repository URL
+  branch                 = "main"  # Branch to deploy from
+  use_manual_integration = false  # Use manual integration for deployment
 }
